@@ -57,7 +57,7 @@ class ArticleDownloader:
       response = requests.get(search_url, headers=headers, timeout=self.timeout_sec).json()
 
       for item in response["message"]["items"]:
-        print(item)
+        #print(item)
         doi = {"doi":item["DOI"], "title":item["title"], "url":item["URL"]}
         record.append(doi)
 
@@ -642,8 +642,8 @@ class ArticleDownloader:
         }
 
         r = requests.get(pdf_url, stream=True, headers=headers, timeout=self.timeout_sec)
-        print(pdf_url)
-        print(r.status_code)
+        #print(pdf_url)
+        #print(r.status_code)
         if r.status_code == 200:
           for chunk in r.iter_content(2048):
             writefile.write(chunk)
