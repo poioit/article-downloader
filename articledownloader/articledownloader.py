@@ -26,6 +26,59 @@ class ArticleDownloader:
     self.timeout_sec = timeout_sec
 
   @traced
+  def get_dict_from_search(self, query, rows=500, mailto="null@null.com"):
+    '''
+    Grabs a set of unique DOIs based on a search query using the CrossRef API
+
+    :param query: the search string
+    :type query: str
+
+    :param rows: the maximum number of DOIs to find
+    :type rows: int
+
+    :param mailto: mailto address for API
+    :type rows: str
+
+    :returns: the unique set of DOIs as a list
+    :rtype: list
+    '''
+
+    record = []
+    base_url = 'https://api.crossref.org/works?query='
+    max_rows = 1000 #Defined by CrossRef API
+
+    headers = {
+      'Accept': 'application/json',
+      'User-agent': 'mailto:' + mailto
+    }
+
+    if rows <= max_rows: #No multi-query needed
+      search_url = base_url + query + '&rows=' + str(rows)
+      response = requests.get(search_url, headers=headers, timeout=self.timeout_sec).json()
+
+      for item in response["message"]["items"]:
+        print(item)
+        doi = {"doi":item["DOI"], "title":item["title"], "url":item["URL"]}
+        record.append(doi)
+
+    else: #Need to split queries
+      cursor = "*"
+      keep_paging = True
+      while (keep_paging):
+        sleep(self.sleep_sec)
+        r = requests.get(base_url + query + "&rows=" + str(max_rows) + "&cursor=" + cursor,
+                         headers=headers, timeout=self.timeout_sec)
+        cursor = quote(r.json()['message']['next-cursor'], safe='')
+        if len(r.json()['message']['items']) == 0:
+          keep_paging = False
+
+        for item in r.json()['message']['items']:
+          doi = {"doi":item["DOI"], "title":item["title"], "url":item["URL"]}
+          record.append(doi)
+
+    return record
+
+  @traced
   def get_dois_from_search(self, query, rows=500, mailto="null@null.com"):
     '''
     Grabs a set of unique DOIs based on a search query using the CrossRef API
@@ -396,7 +449,7 @@ class ArticleDownloader:
       except:
         return False
       return False
-
+    #311
     if mode == 'wiley':
       base_url = 'http://onlinelibrary.wiley.com/doi/'
       api_url = base_url + doi + '/full'
@@ -414,7 +467,7 @@ class ArticleDownloader:
       except:
         return False
       return False
-
+    #316
     if mode == 'acs':
       base_url = 'http://pubs.acs.org/doi/full/'
       api_url = base_url + doi
@@ -432,7 +485,7 @@ class ArticleDownloader:
       except:
         return False
       return False
-
+    #140
     if mode == 'emerald':
       base_url = 'http://www.emeraldinsight.com/doi/full/'
       api_url = base_url + doi
@@ -492,7 +545,7 @@ class ArticleDownloader:
         except:
           return False
       return False
-
+    #221
     if mode == 'aaas':
 
       headers = {
@@ -579,21 +632,24 @@ class ArticleDownloader:
       except:
         return False
       return False
-
+    #78
     if mode == 'elsevier':
       try:
-        pdf_url='http://api.elsevier.com/content/article/doi:' + doi + '?view=FULL'
+        pdf_url='http://api.elsevier.com/content/article/doi/' + doi
         headers = {
           'X-ELS-APIKEY': self.els_api_key,
           'Accept': 'application/pdf'
         }
 
         r = requests.get(pdf_url, stream=True, headers=headers, timeout=self.timeout_sec)
+        print(pdf_url)
+        print(r.status_code)
         if r.status_code == 200:
           for chunk in r.iter_content(2048):
             writefile.write(chunk)
           return True
-      except:
+      except Exception as e:
+        print(str(e))
         # API download limit exceeded
         return False
       return False
@@ -695,7 +751,7 @@ class ArticleDownloader:
       except:
         return False
       return False
-
+    #297
     if mode == 'springer':
       base_url = 'http://link.springer.com/content/pdf/'
       api_url = base_url + doi
