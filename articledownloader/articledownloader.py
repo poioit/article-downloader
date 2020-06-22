@@ -79,7 +79,7 @@ class ArticleDownloader:
           doi = {"doi":item["DOI"], "title":item["title"], "url":item["URL"]}
           record.append(doi)
         print(len(record))
-        if len(record) == 25000:
+        if len(record) >= 20000:
           break
 
     return record
