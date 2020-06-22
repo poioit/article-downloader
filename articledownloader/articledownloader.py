@@ -66,15 +66,21 @@ class ArticleDownloader:
       keep_paging = True
       while (keep_paging):
         sleep(self.sleep_sec)
-        r = requests.get(base_url + query + "&rows=" + str(max_rows) + "&cursor=" + cursor,
+        searchurl = base_url + query + "&rows=" + str(max_rows) + "&cursor=" + cursor
+        print(searchurl)
+        r = requests.get(searchurl,
                          headers=headers, timeout=self.timeout_sec)
         cursor = quote(r.json()['message']['next-cursor'], safe='')
+        print(len(r.json()['message']['items']))
         if len(r.json()['message']['items']) == 0:
           keep_paging = False
 
         for item in r.json()['message']['items']:
           doi = {"doi":item["DOI"], "title":item["title"], "url":item["URL"]}
           record.append(doi)
+        print(len(record))
+        if len(record) == 25000:
+          break
 
     return record
 
